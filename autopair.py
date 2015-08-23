@@ -139,6 +139,7 @@ def print_sol(sol_path):
 ref_cost = find_cost([])
 print 'Reference cost = %d' % ref_cost
 print
+assert ref_cost != None, 'No perfect matching in initial graph'
 
 chosen = []
 elig = None

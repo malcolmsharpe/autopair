@@ -1,0 +1,4 @@
+Requires the BLOSSOM V implementation of minimum cost perfect matching.
+BLOSSOM V can be obtained at
+    http://pub.ist.ac.at/~vnk/software.html#BLOSSOM5
+It should be unarchived into the blossom5-v2.05.src directory, and compiled.
