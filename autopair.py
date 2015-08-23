@@ -4,7 +4,6 @@ import subprocess
 import time
 
 seed = time.time()
-seed = 1440296616.851588 # tmp
 print 'Seed = %r' % seed
 print
 random.seed(seed)
@@ -96,18 +95,10 @@ def find_cost(chosen):
     subg.extend(chosen)
     print '  Finding cost for %d chosen edges in subgraph with %d edges' % (len(chosen), len(subg))
 
-    all_vtx = set()
-    for i, j, cost in subg:
-        all_vtx.add(i)
-        all_vtx.add(j)
-    if len(all_vtx) != len(racers):
-        # This check is necessary to avoid crashing the solver.
-        print '    Skipping since %d vertices have zero degree' % (len(racers) - len(all_vtx))
-        return None
-
     graph_path = 'tmp/graph.txt'
     sol_path = 'tmp/sol.txt'
     stdout_path = 'tmp/stdout.txt'
+    stderr_path = 'tmp/stderr.txt'
     #print 'Generating graph file %s' % graph_path
 
     graph_f = file(graph_path, 'w')
@@ -117,10 +108,19 @@ def find_cost(chosen):
     graph_f.close()
 
     #print 'Solving to file %s with output %s' % (sol_path, stdout_path)
-    subprocess.check_call( [blossom, '-c', '-e', graph_path, '-w', sol_path],
-        stdout=file(stdout_path, 'w') )
+    ret = subprocess.call( [blossom, '-c', '-e', graph_path, '-w', sol_path],
+        stdout=file(stdout_path, 'w'), stderr=file(stderr_path, 'w') )
+
     output = list(file(stdout_path))
     cost_line = output[-1]
+
+    if ret == -11:
+        # The solver segfaults when no perfect matching exists
+        print '    Solver segfaulted, assuming no perfect matching'
+        return None
+
+    assert ret == 0, 'Unexpected return code %d' % ret
+
     cost_prefix = 'cost = '
     assert cost_line.startswith(cost_prefix)
     cost = int(float(cost_line[len(cost_prefix):]) + 0.5)
@@ -160,8 +160,9 @@ while True:
     if e_cost == ref_cost:
         chosen = candid
         elig = None
+print
 
-chosen.sort()
+chosen.sort(key=lambda (i,j,cost): (-point_map[racers[i]] - point_map[racers[j]], racers[i]))
 print 'Final matching:'
 for i, j, cost in chosen:
     ri = racers[i]
@@ -172,4 +173,4 @@ for i, j, cost in chosen:
 
     spread = abs(pi - pj)
 
-    print '%20s (%d) plays %20s (%d) -- spread = %d' % (ri, pi, rj, pj, spread)
+    print '%20s (%d)   plays %20s (%d)   --   spread = %d' % (ri, pi, rj, pj, spread)
