@@ -1,4 +1,6 @@
 import csv
+import os
+import os.path
 import random
 import subprocess
 import time
@@ -95,6 +97,10 @@ def find_cost(chosen):
     subg.extend(chosen)
     print '  Finding cost for %d chosen edges in subgraph with %d edges' % (len(chosen), len(subg))
 
+    try:
+        os.mkdir('tmp')
+    except OSError:
+        assert os.path.exists('tmp')
     graph_path = 'tmp/graph.txt'
     sol_path = 'tmp/sol.txt'
     stdout_path = 'tmp/stdout.txt'
