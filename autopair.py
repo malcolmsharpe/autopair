@@ -1,16 +1,14 @@
 import csv
-import os
-import os.path
 import random
-import subprocess
 import time
+
+import backend
 
 seed = time.time()
 print 'Seed = %r' % seed
 print
 random.seed(seed)
 
-blossom = 'blossom5-v2.05.src/blossom5'
 standings = 'data/CoNDOR Season 3 Matchup Chart - Standings.csv'
 
 forbid_fix = {
@@ -97,50 +95,7 @@ def find_cost(chosen):
     subg.extend(chosen)
     print '  Finding cost for %d chosen edges in subgraph with %d edges' % (len(chosen), len(subg))
 
-    try:
-        os.mkdir('tmp')
-    except OSError:
-        assert os.path.exists('tmp')
-    graph_path = 'tmp/graph.txt'
-    sol_path = 'tmp/sol.txt'
-    stdout_path = 'tmp/stdout.txt'
-    stderr_path = 'tmp/stderr.txt'
-    #print 'Generating graph file %s' % graph_path
-
-    graph_f = file(graph_path, 'w')
-    print >>graph_f, len(racers), len(subg)
-    for i, j, cost in subg:
-        print >>graph_f, i, j, cost
-    graph_f.close()
-
-    #print 'Solving to file %s with output %s' % (sol_path, stdout_path)
-    ret = subprocess.call( [blossom, '-c', '-e', graph_path, '-w', sol_path],
-        stdout=file(stdout_path, 'w'), stderr=file(stderr_path, 'w') )
-
-    output = list(file(stdout_path))
-    cost_line = output[-1]
-
-    if ret == -11:
-        # The solver segfaults when no perfect matching exists
-        print '    Solver segfaulted, assuming no perfect matching'
-        return None
-
-    assert ret == 0, 'Unexpected return code %d' % ret
-
-    cost_prefix = 'cost = '
-    assert cost_line.startswith(cost_prefix)
-    cost = int(float(cost_line[len(cost_prefix):]) + 0.5)
-
-    return cost
-
-def print_sol(sol_path):
-    print 'Interpreting solution:'
-    print
-    for line in list(file(sol_path))[1:]:
-        i, j = map(int, line.split())
-        ri = racers[i]
-        rj = racers[j]
-        print '%20s (%d) plays %20s (%d)' % (ri, point_map[ri], rj, point_map[rj])
+    return backend.solve(len(racers), subg)
 
 ref_cost = find_cost([])
 print 'Reference cost = %d' % ref_cost
