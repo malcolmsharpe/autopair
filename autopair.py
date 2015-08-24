@@ -17,6 +17,8 @@ forbid_fix = {
 
 omit = set( ['Xelnas', 'KageYuuki', 'Zeldaethan9'] ) # dropped/withdrawn/removed
 omit.add('CanadianBac0nz') # away week 4
+omit.add('RobSnowlock') # away week 4
+omit.add('aiLoodee') # bye week 4
 
 rdr = csv.reader(file(standings))
 rows = list(rdr)
