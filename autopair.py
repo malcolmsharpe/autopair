@@ -15,7 +15,8 @@ forbid_fix = {
     'imwaytoopunny': 'imwaytopunny',
 }
 
-omit = set( ['Xelnas', 'KageYuuki'] )
+omit = set( ['Xelnas', 'KageYuuki', 'Zeldaethan9'] ) # dropped/withdrawn/removed
+omit.add('CanadianBac0nz') # away week 4
 
 rdr = csv.reader(file(standings))
 rows = list(rdr)
@@ -27,6 +28,9 @@ for row in rows[4:]:
     racer = row[1]
     if racer in omit:
         print 'Skipping %s' % racer
+        continue
+    if racer == '':
+        print 'Skipping blank row'
         continue
 
     points = int(row[2])
