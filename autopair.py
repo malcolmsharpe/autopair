@@ -9,16 +9,15 @@ print 'Seed = %r' % seed
 print
 random.seed(seed)
 
-standings = 'data/CoNDOR Season 3 Matchup Chart - Standings.csv'
+standings = 'data/standings_week8.csv'
 
 forbid_fix = {
     'imwaytoopunny': 'imwaytopunny',
 }
 
-omit = set( ['Xelnas', 'KageYuuki', 'Zeldaethan9'] ) # dropped/withdrawn/removed
-omit.add('CanadianBac0nz') # away week 4
-omit.add('RobSnowlock') # away week 4
-omit.add('aiLoodee') # bye week 4
+omit = set( ['Xelnas', 'KageYuuki', 'Zeldaethan9', 'AnnieRelli', 'VioletWeavile', 'Morphobutterfly', 'Ghost_Butts', 'MawDerFuchs'] ) # dropped/withdrawn/removed
+
+nweeks = 9
 
 rdr = csv.reader(file(standings))
 rows = list(rdr)
@@ -31,15 +30,16 @@ for row in rows[4:]:
     if racer in omit:
         print 'Skipping %s' % racer
         continue
-    if racer == '':
+    if row[0] == '' or racer == '':
         print 'Skipping blank row'
         continue
 
-    points = int(row[2])
+    print row
+    points = int( float(row[2]) * 2 )
     point_map[racer] = points
     racers.append(racer)
 
-    prev = row[11:]
+    prev = row[2 + nweeks:]
     forbid = []
     for name in prev:
         name = name.strip()
