@@ -4,7 +4,7 @@ import time
 
 import backend
 
-seed = time.time()
+seed = int(time.time())
 print 'Seed = %r' % seed
 print
 random.seed(seed)
@@ -78,29 +78,18 @@ for name in exceptions:
 print 'Read %d eligible racers' % len(racers)
 print
 
-# Convert between vertex tuple and integer index.
-# vertex: (lowercase racer name, match number)
-int_of_vertex = {}
-vertex_of_int = {}
-n_vertices = 0
-for r in racers:
-    r = r.lower()
-    for m in range(exceptions.get(r, weekly_matches)):
-        v = (r, m)
-        int_of_vertex[v] = n_vertices
-        vertex_of_int[n_vertices] = v
-        n_vertices += 1
-
 # Build the initial graph.
+n_vertices = len(racers)
+b = []
+for i, r in enumerate(racers):
+    r = r.lower()
+    b.append(exceptions.get(r, weekly_matches))
+
 edges = []
 for i in range(n_vertices):
     for j in range(i+1, n_vertices):
-        ri, mi = vertex_of_int[i]
-        rj, mj = vertex_of_int[j]
-
-        # Racers can't match with themselves.
-        if ri == rj:
-            continue
+        ri = racers[i].lower()
+        rj = racers[j].lower()
 
         assert ri in all_forbid
         assert rj in all_forbid
@@ -118,77 +107,50 @@ for i in range(n_vertices):
 
 print 'Found %d non-rematches' % len(edges)
 
-# Return only those edges whose endpoints are unmatched by the edges in the collection 'chosen'.
-def filter_edges(chosen):
-    matched = set()
-    for i, j, cost in chosen:
-        assert i not in matched
-        matched.add(i)
-        assert j not in matched
-        matched.add(j)
+# Find the optimal cost given fixed edges.
+def find_optimal_cost(zeros, ones):
+    print '  Finding cost for %d zero edges and %d one edges' % (len(zeros), len(ones))
 
-    chosen = set(chosen)
+    return backend.solve_b(b, edges, zeros, ones)
 
-    elig = []
-    for edge in edges:
-        i, j, cost = edge
-        if i in matched or j in matched:
-            continue
-        elig.append(edge)
-
-    return elig
-
-# Find the optimal cost given a collection of chosen edges.
-def find_optimal_cost(chosen):
-    subg = filter_edges(chosen)
-    subg.extend(chosen)
-    print '  Finding cost for %d chosen edges in subgraph with %d edges' % (len(chosen), len(subg))
-
-    return backend.solve(n_vertices, subg)
-
-# Find the cost before any edges have been chosen.
+# Find the cost before any edges have been tried.
 # The end solution will have the same cost.
-ref_cost = find_optimal_cost([])
+ref_cost = find_optimal_cost([], [])
 print 'Reference cost = %d' % ref_cost
 print
-assert ref_cost != None, 'No perfect matching in initial graph'
+assert ref_cost != None, 'No perfect b-matching in initial graph'
 
-chosen = []
-elig = None
-while True:
-    if not elig:
-        elig = filter_edges(chosen)
-        if not elig:
-            # All vertices have been matched.
-            break
-        # This is the only randomization needed.
-        random.shuffle(elig)
+zeros = []
+ones = []
+elig = list(edges)
+random.shuffle(elig)
+for i, e in enumerate(elig):
+    print 'Trying edge %s -- %d/%d' % (e, i+1, len(edges))
 
-    e = elig.pop()
-    print 'Trying edge %s' % (e,)
-
-    candid = chosen + [e]
-    e_cost = find_optimal_cost(candid)
+    candid = ones + [e]
+    e_cost = find_optimal_cost(zeros, candid)
 
     print '  Becomes cost %s (compare to %d)' % (e_cost, ref_cost)
 
     if e_cost == ref_cost:
-        chosen = candid
-        elig = None
+        ones = candid
+    else:
+        zeros.append(e)
 print
 
-def chosen_sort_key(edge):
+def ones_sort_key(edge):
     i, j, cost = edge
-    ri, mi = vertex_of_int[i]
-    rj, mj = vertex_of_int[j]
+    ri = racers[i].lower()
+    rj = racers[j].lower()
 
     return (-(point_map[ri] + point_map[rj]), ri, rj)
-chosen.sort(key=chosen_sort_key)
+ones.sort(key=ones_sort_key)
 
-print 'Final matching:'
-for i, j, cost in chosen:
-    ri, mi = vertex_of_int[i]
-    rj, mj = vertex_of_int[j]
+print 'Final matching with cost*4 = %d (seed = %r):' % (ref_cost, seed)
+print
+for i, j, cost in ones:
+    ri = racers[i].lower()
+    rj = racers[j].lower()
 
     pi = point_map[ri] / 2.0
     pj = point_map[rj] / 2.0
@@ -198,4 +160,9 @@ for i, j, cost in chosen:
     ri = unlower_racer[ri]
     rj = unlower_racer[rj]
 
-    print '%20s (%4.1f)   plays %20s (%4.1f)   --   spread = %4.1f' % (ri, pi, rj, pj, spread)
+    cost_pretty = '%3d' % cost
+    if cost == 0:
+        cost_pretty = '   '
+
+    print '%20s (%4.1f)   plays %20s (%4.1f)   --   spread = %4.1f;  cost*4 = %s' % (
+        ri, pi, rj, pj, spread, cost_pretty)
